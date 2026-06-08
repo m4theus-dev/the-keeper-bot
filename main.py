@@ -26,15 +26,27 @@ async def on_ready():
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send("❌ Command not found. Use `/help`.")
+        await ctx.send(embed=discord.Embed(
+            title="❌ Command Not Found",
+            description="Use `/help` to see available commands.",
+            color=discord.Color.red(),
+        ))
         return
 
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send("❌ Missing arguments. Use `/help <command>`.")
+        await ctx.send(embed=discord.Embed(
+            title="❌ Missing Arguments",
+            description="Use `/help <command>` to see the correct usage.",
+            color=discord.Color.red(),
+        ))
         return
 
     if isinstance(error, commands.BadArgument):
-        await ctx.send("❌ Invalid argument format. Use quotes for names with spaces and numbers for DC/AC.")
+        await ctx.send(embed=discord.Embed(
+            title="❌ Invalid Argument",
+            description="Use quotes for names with spaces and check the argument format.",
+            color=discord.Color.red(),
+        ))
         return
 
     raise error

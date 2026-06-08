@@ -8,10 +8,6 @@ def normalize_topic(topic: str) -> str:
     return topic.strip().lower().replace("-", "_").replace(" ", "_")
 
 
-# =========================
-# HELP DATABASE
-# =========================
-
 COMMANDS_HELP = {
     "create": {
         "desc": "Creates a new character.",
@@ -22,11 +18,11 @@ COMMANDS_HELP = {
     },
 
     "sheet": {
-        "desc": "Displays full character sheet.",
+        "desc": "Displays the full character sheet.",
         "usage": "/sheet <name>",
         "args": "name → character name",
         "example": '/sheet "Ed Baiano"',
-        "notes": "Shows attributes, skills, items, weapons, abilities and derived stats."
+        "notes": "Shows attributes, skills, items, weapons, abilities, and equipped weapon."
     },
 
     "edit": {
@@ -42,7 +38,7 @@ COMMANDS_HELP = {
         "usage": "/reload <name>",
         "args": "name → character name",
         "example": '/reload "Ed Baiano"',
-        "notes": "Recomputes HP, initiative and proficiency."
+        "notes": "Recomputes HP, initiative, and proficiency."
     },
 
     "delete": {
@@ -60,10 +56,6 @@ COMMANDS_HELP = {
         "example": "/listchars",
         "notes": "Reads from saves/characters/"
     },
-
-    # =========================
-    # SKILLS
-    # =========================
 
     "setskill": {
         "desc": "Sets skill proficiency level.",
@@ -86,7 +78,7 @@ COMMANDS_HELP = {
         "usage": "/skills <name>",
         "args": "name → character name",
         "example": '/skills "Ed Baiano"',
-        "notes": "Uses 0/1/2 proficiency system."
+        "notes": "Uses the 0/1/2 proficiency system."
     },
 
     "check": {
@@ -94,31 +86,23 @@ COMMANDS_HELP = {
         "usage": "/check <name> <skill> [DC]",
         "args": "skill → athletics, stealth, etc | DC optional",
         "example": '/check "Ed Baiano" acrobatics 15',
-        "notes": "Uses full skill system mapping."
+        "notes": "Uses the full skill mapping from data/skills.json."
     },
-
-    # =========================
-    # CORE ROLL SYSTEM
-    # =========================
 
     "roll": {
         "desc": "Rolls a custom formula.",
         "usage": "/roll <name> <formula>",
         "args": "formula → STR, DEX, PROF, LEVEL, dice, SKILL:ATHLETICS",
         "example": '/roll "Ed Baiano" 1d20+DEX+PROF',
-        "notes": "Supports dice + variables + skill injection."
+        "notes": "Supports dice, variables, and skill injection."
     },
-
-    # =========================
-    # ACTION SYSTEM
-    # =========================
 
     "use": {
         "desc": "Uses an item from inventory.",
         "usage": "/use <name> <item> [DC]",
         "args": "item → must exist in inventory | DC optional",
         "example": '/use "Ed Baiano" health_potion 12',
-        "notes": "Uses item.json logic (attempt/value system)."
+        "notes": "Reads attempt/value from items.json."
     },
 
     "cast": {
@@ -126,20 +110,40 @@ COMMANDS_HELP = {
         "usage": "/cast <name> <ability> [DC]",
         "args": "ability → learned ability | DC optional",
         "example": '/cast "Ed Baiano" fireball 15',
-        "notes": "Supports requires_weapon logic."
+        "notes": "Uses ability steps and weapon requirements when needed."
     },
 
     "attack": {
         "desc": "Attacks using a weapon.",
         "usage": "/attack <name> <weapon> [AC]",
-        "args": "weapon → equipped weapon | AC optional",
+        "args": "weapon → owned weapon | AC optional",
         "example": '/attack "Ed Baiano" longsword 15',
-        "notes": "AC = Armor Class (defense threshold)."
+        "notes": "AC = Armor Class."
     },
 
-    # =========================
-    # DATA MANAGEMENT
-    # =========================
+    "equip": {
+        "desc": "Equips a weapon.",
+        "usage": "/equip <name> <weapon>",
+        "args": "weapon → owned weapon",
+        "example": '/equip "Ed Baiano" dagger',
+        "notes": "Sets the active weapon used as priority for skills and attacks."
+    },
+
+    "unequip": {
+        "desc": "Removes the equipped weapon.",
+        "usage": "/unequip <name>",
+        "args": "name → character name",
+        "example": '/unequip "Ed Baiano"',
+        "notes": "Does not remove the weapon from inventory."
+    },
+
+    "equipment": {
+        "desc": "Shows current equipment.",
+        "usage": "/equipment <name>",
+        "args": "name → character name",
+        "example": '/equipment "Ed Baiano"',
+        "notes": "Shows equipped weapon and inventory weapons."
+    },
 
     "additem": {
         "desc": "Adds item to character.",
@@ -189,16 +193,12 @@ COMMANDS_HELP = {
         "notes": "Admin only."
     },
 
-    # =========================
-    # INFO SYSTEM
-    # =========================
-
     "iteminfo": {
         "desc": "Shows item data from database.",
         "usage": "/iteminfo <item>",
         "args": "item → items.json key",
         "example": "/iteminfo health_potion",
-        "notes": "Displays attempt/value if available."
+        "notes": "Displays attempt/value when available."
     },
 
     "abilityinfo": {
@@ -206,7 +206,7 @@ COMMANDS_HELP = {
         "usage": "/abilityinfo <ability>",
         "args": "ability → abilities.json key",
         "example": "/abilityinfo fireball",
-        "notes": "Shows attempt, value and requirements."
+        "notes": "Shows attempt, value, and requirements."
     },
 
     "weaponinfo": {
@@ -215,56 +215,49 @@ COMMANDS_HELP = {
         "args": "weapon → weapons.json key",
         "example": "/weaponinfo longsword",
         "notes": "Shows attack and damage formulas."
-    }
+    },
 }
 
-
-# =========================
-# HELP SECTIONS
-# =========================
 
 HELP_SECTIONS = {
     "core": {
         "title": "📜 Core System",
-        "summary": "Character creation, editing and management.",
-        "commands": ["create", "sheet", "edit", "reload", "delete", "listchars"]
+        "summary": "Character creation, editing, reload, deletion, and listing.",
+        "commands": ["create", "sheet", "edit", "reload", "delete", "listchars"],
     },
-
     "skills": {
         "title": "🎯 Skills System",
         "summary": "Skill proficiency and checks.",
-        "commands": ["setskill", "removeskill", "skills", "check"]
+        "commands": ["setskill", "removeskill", "skills", "check"],
     },
-
     "combat": {
         "title": "⚔️ Combat System",
-        "summary": "Rolls, attacks, item use and casting.",
-        "commands": ["roll", "use", "cast", "attack"]
+        "summary": "Rolls, attacks, item use, and casting.",
+        "commands": ["roll", "use", "cast", "attack"],
     },
-
+    "equipment": {
+        "title": "🛡 Equipment System",
+        "summary": "Equip, unequip, and inspect weapons.",
+        "commands": ["equip", "unequip", "equipment"],
+    },
     "data": {
         "title": "🗃️ Data System",
-        "summary": "Manage items, abilities and weapons.",
-        "commands": ["additem", "removeitem", "addability", "removeability", "addweapon", "removeweapon"]
+        "summary": "Manage items, abilities, and weapons.",
+        "commands": ["additem", "removeitem", "addability", "removeability", "addweapon", "removeweapon"],
     },
-
     "info": {
         "title": "ℹ️ Database Info",
         "summary": "Inspect raw JSON data.",
-        "commands": ["iteminfo", "abilityinfo", "weaponinfo"]
-    }
+        "commands": ["iteminfo", "abilityinfo", "weaponinfo"],
+    },
 }
 
 
-# =========================
-# EMBEDS
-# =========================
-
 def build_overview():
     embed = discord.Embed(
-        title="📖 The Keeper - Help / Guide",
-        description="Use `/help <section>` or `/help <command>`",
-        color=discord.Color.blue()
+        title="📖 The Keeper — Help",
+        description="Use `/help <section>` or `/help <command>`.",
+        color=discord.Color.blue(),
     )
 
     for k, v in HELP_SECTIONS.items():
@@ -302,6 +295,30 @@ def build_section(key):
             inline=False
         )
 
+    if key == "combat":
+        embed.add_field(
+            name="Action Rules",
+            value=(
+                "`attempt` = test roll\n"
+                "`value` / `damage` = effect or damage\n"
+                "If `attempt` is missing, the command goes straight to `value`.\n"
+                "If `value` is missing, only `attempt` is rolled.\n"
+                "`DC` is difficulty class, `AC` is armor class."
+            ),
+            inline=False
+        )
+
+    if key == "equipment":
+        embed.add_field(
+            name="Priority",
+            value=(
+                "1. Equipped weapon\n"
+                "2. Preferred weapon from the command\n"
+                "3. First compatible weapon in inventory"
+            ),
+            inline=False
+        )
+
     return embed
 
 
@@ -323,10 +340,6 @@ def build_command(key):
 
     return embed
 
-
-# =========================
-# COMMAND
-# =========================
 
 def setup_help(bot):
 

@@ -1,26 +1,32 @@
 {
   "fists": {
     "type": "fists",
+    "tags": ["natural", "melee"],
     "damage": "1d4+STR",
-    "attempt": "1d20+STR",
-    "weapon_tags": ["natural"]
+    "attempt": "1d20+STR"
   },
   "longsword": {
     "type": "longsword",
+    "tags": ["martial", "melee"],
     "damage": "1d8+STR",
-    "attempt": "1d20+STR+PROF",
-    "weapon_tags": ["heavy", "martial"]
+    "attempt": "1d20+STR+PROF"
   },
   "shortbow": {
     "type": "shortbow",
+    "tags": ["ranged"],
     "damage": "1d6+DEX",
-    "attempt": "1d20+DEX+PROF",
-    "weapon_tags": ["ranged"]
+    "attempt": "1d20+DEX+PROF"
   },
   "dagger": {
     "type": "dagger",
+    "tags": ["finesse", "light", "melee"],
     "damage": "1d4+DEX",
-    "attempt": "1d20+DEX+PROF",
-    "weapon_tags": ["finesse", "light", "dagger"]
+    "attempt": "1d20+DEX+PROF"
+  },
+  "rapier": {
+    "type": "rapier",
+    "tags": ["finesse", "light", "melee"],
+    "damage": "1d8+DEX",
+    "attempt": "1d20+DEX+PROF"
   }
 }
