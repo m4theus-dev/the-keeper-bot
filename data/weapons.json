@@ -1,0 +1,13 @@
+{
+  "longsword": {
+    "type": "weapon",
+    "damage": "1d8+STR",
+    "attempt": "1d20+STR+PROF"
+  },
+
+  "shortbow": {
+    "type": "weapon",
+    "damage": "1d6+DEX",
+    "attempt": "1d20+DEX+PROF"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "double_strike": {
+    "type": "weapon_skill",
+    "description": "Attack twice with weapon",
+    "requires_weapon": true,
+    "steps": [
+      { "attempt": "1d20+DEX+PROF", "value": "weapon" },
+      { "attempt": "1d20+DEX+PROF", "value": "weapon" }
+    ]
+  },
+
+  "fireball": {
+    "type": "spell",
+    "description": "Explosive fire damage",
+    "attempt": "1d20+INT+PROF",
+    "value": "8d6+INT"
+  },
+
+  "dash": {
+    "type": "movement",
+    "description": "Quick movement action",
+    "value": "DEX+5"
+  }
+}
