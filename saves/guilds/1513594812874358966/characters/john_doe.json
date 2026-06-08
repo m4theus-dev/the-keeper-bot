@@ -1,0 +1,29 @@
+{
+    "name": "John Doe",
+    "attributes": {
+        "STR": 10,
+        "DEX": 18,
+        "CON": 16,
+        "INT": 12,
+        "WIS": 10,
+        "CHA": 8
+    },
+    "skills": {},
+    "items": [
+        "health_potion"
+    ],
+    "abilities": [
+        "double_strike"
+    ],
+    "weapons": [
+        "dagger",
+        "rapier",
+        "fists"
+    ],
+    "equipped_weapon": null,
+    "level": 5,
+    "prof_bonus": 3,
+    "hp": 35,
+    "max_hp": 35,
+    "initiative": 4
+}

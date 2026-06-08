@@ -1,0 +1,21 @@
+{
+    "name": "Fulano De Tal",
+    "attributes": {
+        "STR": 10,
+        "DEX": 10,
+        "CON": 10,
+        "INT": 10,
+        "WIS": 10,
+        "CHA": 10
+    },
+    "skills": {},
+    "items": [],
+    "abilities": [],
+    "weapons": [],
+    "equipped_weapon": null,
+    "level": 1,
+    "prof_bonus": 2,
+    "hp": 20,
+    "max_hp": 20,
+    "initiative": 0
+}

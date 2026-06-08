@@ -28,22 +28,38 @@ def pretty_id(value: str) -> str:
 
 
 # =========================
-# GUILD SAVE ISOLATION (NEW)
+# GUILD SAVE ISOLATION
 # =========================
-# IMPORTANT: every character save is now separated by guild
-# character key becomes: {guild_id}:{character_name}
+# Usa o ID da guilda onde a mensagem do comando foi enviada.
+# Em DM, cai para "global".
 
-def guild_key(ctx, name: str) -> str:
-    guild_id = getattr(ctx.guild, "id", "global")
-    return f"{guild_id}:{normalize_name(name)}"
+def get_message_guild_id(ctx):
+    guild = getattr(getattr(ctx, "message", None), "guild", None)
+    if guild is None:
+        guild = getattr(ctx, "guild", None)
+
+    return str(getattr(guild, "id", "global"))
 
 
 def load_guild_character(ctx, name: str):
-    return load_character(guild_key(ctx, name))
+    guild_id = get_message_guild_id(ctx)
+
+    # Compatível com a assinatura nova: load_character(name, guild_id)
+    try:
+        return load_character(normalize_name(name), guild_id)
+    except TypeError:
+        # Fallback caso seu sistema ainda use chave única concatenada
+        return load_character(f"{guild_id}:{normalize_name(name)}")
 
 
 def save_guild_character(ctx, char: dict):
-    return save_character(char)
+    guild_id = get_message_guild_id(ctx)
+
+    # Compatível com a assinatura nova: save_character(char, guild_id)
+    try:
+        return save_character(char, guild_id)
+    except TypeError:
+        return save_character(char)
 
 
 # =========================
@@ -76,7 +92,7 @@ def build_embed(title, color, description=None):
 
 def format_roll(result: dict) -> str:
     lines = [
-        f"**Formula:** `{result.get('formula','')}`",
+        f"**Formula:** `{result.get('formula', '')}`",
         f"**Result:** `{result.get('total')}`",
     ]
 
@@ -160,9 +176,8 @@ def setup_action_commands(bot):
 
         await ctx.send(embed=embed)
 
-
     # =========================
-    # EQUIP (FIXED + GUILD SAFE)
+    # EQUIP
     # =========================
     @bot.command(name="equip")
     async def equip(ctx, name: str, weapon: str):
@@ -184,8 +199,7 @@ def setup_action_commands(bot):
         if not data:
             return await ctx.send("❌ Weapon not found in database.")
 
-        # IMPORTANT FIX:
-        # only one equipped weapon per character per server
+        # Apenas 1 arma equipada por personagem por guilda
         char["equipped_weapon"] = weapon_id
 
         save_guild_character(ctx, char)
@@ -196,7 +210,6 @@ def setup_action_commands(bot):
             data,
             equipped=True
         ))
-
 
     # =========================
     # UNEQUIP
@@ -211,7 +224,6 @@ def setup_action_commands(bot):
         save_guild_character(ctx, char)
 
         await ctx.send("🫳 Weapon unequipped.")
-
 
     # =========================
     # EQUIPMENT STATUS
@@ -256,7 +268,6 @@ def setup_action_commands(bot):
 
         await ctx.send(embed=embed)
 
-
     # =========================
     # USE ITEM
     # =========================
@@ -291,7 +302,6 @@ def setup_action_commands(bot):
         embed.add_field(name="Final", value=str(result["final"]), inline=False)
 
         await ctx.send(embed=embed)
-
 
     # =========================
     # CAST
