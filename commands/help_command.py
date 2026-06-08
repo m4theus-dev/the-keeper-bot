@@ -8,311 +8,344 @@ def normalize_topic(topic: str) -> str:
     return topic.strip().lower().replace("-", "_").replace(" ", "_")
 
 
+# =========================
+# HELP DATABASE
+# =========================
+
 COMMANDS_HELP = {
     "create": {
-        "desc": "Cria um personagem novo.",
+        "desc": "Creates a new character.",
         "usage": "/create <name>",
-        "args": "name → nome do personagem. Use aspas se tiver espaço.",
+        "args": "name → character name (use quotes if needed)",
         "example": '/create "Ed Baiano"',
-        "notes": "Cria com atributos base e HP inicial calculado."
+        "notes": "Starts with base attributes and default HP."
     },
+
     "sheet": {
-        "desc": "Mostra a ficha completa do personagem.",
+        "desc": "Displays full character sheet.",
         "usage": "/sheet <name>",
-        "args": "name → nome do personagem.",
+        "args": "name → character name",
         "example": '/sheet "Ed Baiano"',
-        "notes": "Mostra atributos, skills, itens, armas, magias e stats derivados."
+        "notes": "Shows attributes, skills, items, weapons, abilities and derived stats."
     },
+
     "edit": {
-        "desc": "Edita level, atributos e outros campos do personagem.",
+        "desc": "Edits character fields (admin only).",
         "usage": "/edit <name> <field> <value>",
-        "args": "field → ex.: attributes.STR ou level | value → novo valor",
+        "args": "field → attributes.STR | level | hp etc.",
         "example": '/edit "Ed Baiano" attributes.STR 15',
-        "notes": "Admin only. Renomear personagem não é permitido."
+        "notes": "Admin only. Direct data mutation."
     },
+
     "reload": {
-        "desc": "Recalcula HP, HP máximo, iniciativa e proficiência.",
+        "desc": "Recalculates derived stats.",
         "usage": "/reload <name>",
-        "args": "name → nome do personagem.",
+        "args": "name → character name",
         "example": '/reload "Ed Baiano"',
-        "notes": "Admin only. Usa level e atributos atuais."
+        "notes": "Recomputes HP, initiative and proficiency."
     },
+
     "delete": {
-        "desc": "Apaga um personagem.",
+        "desc": "Deletes a character (admin only).",
         "usage": "/delete <name>",
-        "args": "name → nome do personagem.",
+        "args": "name → character name",
         "example": '/delete "Ed Baiano"',
-        "notes": "Admin only."
+        "notes": "Permanent deletion."
     },
+
     "listchars": {
-        "desc": "Lista todos os personagens salvos.",
+        "desc": "Lists all saved characters.",
         "usage": "/listchars",
         "args": "none",
         "example": "/listchars",
-        "notes": "Mostra os nomes detectados em `saves/characters/`."
+        "notes": "Reads from saves/characters/"
     },
+
+    # =========================
+    # SKILLS
+    # =========================
+
     "setskill": {
-        "desc": "Define nível de proficiência de uma perícia.",
+        "desc": "Sets skill proficiency level.",
         "usage": "/setskill <name> <skill> <level>",
-        "args": "skill → perícia | level → 0, 1 ou 2",
+        "args": "level → 0 (none), 1 (proficient), 2 (expertise)",
         "example": '/setskill "Ed Baiano" athletics 2',
-        "notes": "Admin only. 0 = untrained, 1 = proficient, 2 = expertise."
+        "notes": "Admin only."
     },
+
     "removeskill": {
-        "desc": "Remove uma perícia do personagem.",
+        "desc": "Removes a skill.",
         "usage": "/removeskill <name> <skill>",
-        "args": "skill → perícia.",
+        "args": "skill → skill name",
         "example": '/removeskill "Ed Baiano" stealth',
         "notes": "Admin only."
     },
+
     "skills": {
-        "desc": "Mostra as perícias do personagem.",
+        "desc": "Shows character skills.",
         "usage": "/skills <name>",
-        "args": "name → nome do personagem.",
+        "args": "name → character name",
         "example": '/skills "Ed Baiano"',
-        "notes": "Usa o sistema 0/1/2 e calcula o bônus total."
+        "notes": "Uses 0/1/2 proficiency system."
     },
+
     "check": {
-        "desc": "Faz teste de perícia com d20 + skill.",
+        "desc": "Skill check (d20 + attribute + proficiency).",
         "usage": "/check <name> <skill> [DC]",
-        "args": "skill → perícia oficial | DC opcional no final",
+        "args": "skill → athletics, stealth, etc | DC optional",
         "example": '/check "Ed Baiano" acrobatics 15',
-        "notes": "Usa todas as 18 perícias padrão do data/skills.json."
+        "notes": "Uses full skill system mapping."
     },
+
+    # =========================
+    # CORE ROLL SYSTEM
+    # =========================
+
     "roll": {
-        "desc": "Rola uma fórmula qualquer com variáveis e dados.",
+        "desc": "Rolls a custom formula.",
         "usage": "/roll <name> <formula>",
-        "args": "formula → pode usar STR, DEX, PROF, LEVEL, dados e SKILL:ATHLETICS",
+        "args": "formula → STR, DEX, PROF, LEVEL, dice, SKILL:ATHLETICS",
         "example": '/roll "Ed Baiano" 1d20+DEX+PROF',
-        "notes": "SKILL:... já inclui atributo + proficiência; não some PROF de novo a menos que queira duplicar."
+        "notes": "Supports dice + variables + skill injection."
     },
+
+    # =========================
+    # ACTION SYSTEM
+    # =========================
+
     "use": {
-        "desc": "Usa um item do inventário.",
+        "desc": "Uses an item from inventory.",
         "usage": "/use <name> <item> [DC]",
-        "args": "item → item em `items.json` e no inventário | DC opcional",
+        "args": "item → must exist in inventory | DC optional",
         "example": '/use "Ed Baiano" health_potion 12',
-        "notes": "Se o item tiver attempt e value, os dois aparecem no embed. Se faltar attempt, vai direto pro value."
+        "notes": "Uses item.json logic (attempt/value system)."
     },
+
     "cast": {
-        "desc": "Usa uma habilidade/magia aprendida.",
+        "desc": "Casts an ability/spell.",
         "usage": "/cast <name> <ability> [DC]",
-        "args": "ability → ability em `abilities.json` e aprendido pelo personagem | DC opcional",
+        "args": "ability → learned ability | DC optional",
         "example": '/cast "Ed Baiano" fireball 15',
-        "notes": "Se a habilidade exigir arma, o bot tenta escolher uma arma válida do personagem."
+        "notes": "Supports requires_weapon logic."
     },
+
     "attack": {
-        "desc": "Faz um ataque com arma.",
+        "desc": "Attacks using a weapon.",
         "usage": "/attack <name> <weapon> [AC]",
-        "args": "weapon → arma no inventário | AC opcional",
+        "args": "weapon → equipped weapon | AC optional",
         "example": '/attack "Ed Baiano" longsword 15',
-        "notes": "AC = Armor Class. Se não houver attack roll na arma, o AC é ignorado."
+        "notes": "AC = Armor Class (defense threshold)."
     },
+
+    # =========================
+    # DATA MANAGEMENT
+    # =========================
+
     "additem": {
-        "desc": "Adiciona item ao personagem.",
+        "desc": "Adds item to character.",
         "usage": "/additem <name> <item>",
-        "args": "item → item em `items.json`.",
+        "args": "item → from items.json",
         "example": '/additem "Ed Baiano" health_potion',
         "notes": "Admin only."
     },
+
     "removeitem": {
-        "desc": "Remove item do personagem.",
+        "desc": "Removes item from character.",
         "usage": "/removeitem <name> <item>",
-        "args": "item → item do inventário.",
+        "args": "item → inventory item",
         "example": '/removeitem "Ed Baiano" health_potion',
         "notes": "Admin only."
     },
+
     "addability": {
-        "desc": "Adiciona habilidade ao personagem.",
+        "desc": "Adds ability to character.",
         "usage": "/addability <name> <ability>",
-        "args": "ability → ability em `abilities.json`.",
+        "args": "ability → from abilities.json",
         "example": '/addability "Ed Baiano" fireball',
         "notes": "Admin only."
     },
+
     "removeability": {
-        "desc": "Remove habilidade do personagem.",
+        "desc": "Removes ability from character.",
         "usage": "/removeability <name> <ability>",
-        "args": "ability → habilidade aprendida.",
+        "args": "ability → learned ability",
         "example": '/removeability "Ed Baiano" fireball',
         "notes": "Admin only."
     },
+
     "addweapon": {
-        "desc": "Adiciona arma ao personagem.",
+        "desc": "Adds weapon to character.",
         "usage": "/addweapon <name> <weapon>",
-        "args": "weapon → weapon em `weapons.json`.",
+        "args": "weapon → from weapons.json",
         "example": '/addweapon "Ed Baiano" longsword',
         "notes": "Admin only."
     },
+
     "removeweapon": {
-        "desc": "Remove arma do personagem.",
+        "desc": "Removes weapon from character.",
         "usage": "/removeweapon <name> <weapon>",
-        "args": "weapon → arma do inventário.",
+        "args": "weapon → inventory weapon",
         "example": '/removeweapon "Ed Baiano" longsword',
         "notes": "Admin only."
     },
+
+    # =========================
+    # INFO SYSTEM
+    # =========================
+
     "iteminfo": {
-        "desc": "Mostra os dados de um item do JSON.",
+        "desc": "Shows item data from database.",
         "usage": "/iteminfo <item>",
-        "args": "item → item em `items.json`.",
+        "args": "item → items.json key",
         "example": "/iteminfo health_potion",
-        "notes": "Mostra nome, descrição, tipo, attempt e value."
+        "notes": "Displays attempt/value if available."
     },
+
     "abilityinfo": {
-        "desc": "Mostra os dados de uma habilidade do JSON.",
+        "desc": "Shows ability data from database.",
         "usage": "/abilityinfo <ability>",
-        "args": "ability → habilidade em `abilities.json`.",
+        "args": "ability → abilities.json key",
         "example": "/abilityinfo fireball",
-        "notes": "Mostra nome, descrição, tipo, attempt, value e requires_weapon."
+        "notes": "Shows attempt, value and requirements."
     },
+
     "weaponinfo": {
-        "desc": "Mostra os dados de uma arma do JSON.",
+        "desc": "Shows weapon data from database.",
         "usage": "/weaponinfo <weapon>",
-        "args": "weapon → arma em `weapons.json`.",
+        "args": "weapon → weapons.json key",
         "example": "/weaponinfo longsword",
-        "notes": "Mostra nome, tipo, attempt e damage."
-    },
+        "notes": "Shows attack and damage formulas."
+    }
 }
 
+
+# =========================
+# HELP SECTIONS
+# =========================
 
 HELP_SECTIONS = {
     "core": {
-        "title": "📜 Core Commands",
-        "summary": "Create, sheet, edit, reload, delete and list characters.",
-        "commands": ["create", "sheet", "edit", "reload", "delete", "listchars"],
+        "title": "📜 Core System",
+        "summary": "Character creation, editing and management.",
+        "commands": ["create", "sheet", "edit", "reload", "delete", "listchars"]
     },
+
     "skills": {
-        "title": "🎯 Skills & Checks",
-        "summary": "Skill levels, full skill map, and skill checks.",
-        "commands": ["setskill", "removeskill", "skills", "check"],
+        "title": "🎯 Skills System",
+        "summary": "Skill proficiency and checks.",
+        "commands": ["setskill", "removeskill", "skills", "check"]
     },
+
     "combat": {
-        "title": "⚔️ Combat / Action Commands",
-        "summary": "Rolls, item use, casting and weapon attacks.",
-        "commands": ["roll", "use", "cast", "attack"],
+        "title": "⚔️ Combat System",
+        "summary": "Rolls, attacks, item use and casting.",
+        "commands": ["roll", "use", "cast", "attack"]
     },
+
     "data": {
-        "title": "🗃️ Data Editing",
-        "summary": "Add or remove items, abilities and weapons from characters.",
-        "commands": ["additem", "removeitem", "addability", "removeability", "addweapon", "removeweapon"],
+        "title": "🗃️ Data System",
+        "summary": "Manage items, abilities and weapons.",
+        "commands": ["additem", "removeitem", "addability", "removeability", "addweapon", "removeweapon"]
     },
+
     "info": {
         "title": "ℹ️ Database Info",
-        "summary": "Inspect the raw JSON data for items, abilities and weapons.",
-        "commands": ["iteminfo", "abilityinfo", "weaponinfo"],
-    },
+        "summary": "Inspect raw JSON data.",
+        "commands": ["iteminfo", "abilityinfo", "weaponinfo"]
+    }
 }
 
 
-def build_overview_embed():
+# =========================
+# EMBEDS
+# =========================
+
+def build_overview():
     embed = discord.Embed(
-        title="📖 RPG Bot Help",
-        description="Use text commands with the `/` prefix, like `/help core` or `/help attack`.\n\nNo literal flags are used. The optional number at the end is treated as DC or AC.",
-        color=discord.Color.blue(),
+        title="📖 The Keeper - Help / Guide",
+        description="Use `/help <section>` or `/help <command>`",
+        color=discord.Color.blue()
     )
 
-    for key, section in HELP_SECTIONS.items():
+    for k, v in HELP_SECTIONS.items():
         embed.add_field(
-            name=section["title"],
-            value=f"{section['summary']}\nUse `/help {key}`",
-            inline=False,
+            name=v["title"],
+            value=f"{v['summary']}\n`/help {k}`",
+            inline=False
         )
 
-    embed.set_footer(text="Use quotes for names with spaces: /sheet \"Ed Baiano\"")
     return embed
 
 
-def build_section_embed(section_key: str):
-    section = HELP_SECTIONS[section_key]
+def build_section(key):
+    section = HELP_SECTIONS[key]
+
     embed = discord.Embed(
         title=section["title"],
         description=section["summary"],
-        color=discord.Color.blurple(),
+        color=discord.Color.blurple()
     )
 
-    for cmd_name in section["commands"]:
-        info = COMMANDS_HELP[cmd_name]
+    for cmd in section["commands"]:
+        info = COMMANDS_HELP[cmd]
         embed.add_field(
-            name=f"/{cmd_name}",
-            value=f"{info['desc']}\n`{info['usage']}`",
-            inline=False,
+            name=f"/{cmd}",
+            value=info["desc"],
+            inline=False
         )
 
-    if section_key == "skills":
+    if key == "skills":
         skill_map = get_skill_map()
-        skill_lines = [f"**{k}** → `{v}`" for k, v in sorted(skill_map.items())]
         embed.add_field(
-            name="Standard Skills",
-            value="\n".join(skill_lines),
-            inline=False,
-        )
-        embed.add_field(
-            name="Skill Levels",
-            value="`0` = untrained | `1` = proficient | `2` = expertise",
-            inline=False,
-        )
-
-    if section_key == "combat":
-        embed.add_field(
-            name="How it works",
-            value=(
-                "`attempt` = test roll\n"
-                "`value` / `damage` = effect or damage\n"
-                "If `attempt` is missing, the command goes straight to `value`.\n"
-                "If `value` is missing, only `attempt` is rolled.\n"
-                "`DC` is class difficulty, `AC` is armor class."
-            ),
-            inline=False,
-        )
-
-    if section_key == "data":
-        embed.add_field(
-            name="Permission",
-            value="These commands are Admin only.",
-            inline=False,
+            name="Skill Mapping",
+            value="\n".join([f"{k} → {v}" for k, v in skill_map.items()]),
+            inline=False
         )
 
     return embed
 
 
-def build_command_embed(command_key: str):
-    info = COMMANDS_HELP[command_key]
+def build_command(key):
+    cmd = COMMANDS_HELP[key]
+
     embed = discord.Embed(
-        title=f"📘 Help — /{command_key}",
-        description=info["desc"],
-        color=discord.Color.blurple(),
+        title=f"📘 /{key}",
+        description=cmd["desc"],
+        color=discord.Color.blurple()
     )
-    embed.add_field(name="Usage", value=info["usage"], inline=False)
-    embed.add_field(name="Arguments", value=info["args"], inline=False)
-    embed.add_field(name="Example", value=info["example"], inline=False)
 
-    if info.get("notes"):
-        embed.add_field(name="Notes", value=info["notes"], inline=False)
+    embed.add_field(name="Usage", value=cmd["usage"], inline=False)
+    embed.add_field(name="Arguments", value=cmd["args"], inline=False)
+    embed.add_field(name="Example", value=cmd["example"], inline=False)
 
-    if "Admin only" in info.get("notes", ""):
-        embed.add_field(name="Permission", value="Admin only", inline=False)
+    if cmd.get("notes"):
+        embed.add_field(name="Notes", value=cmd["notes"], inline=False)
 
     return embed
 
+
+# =========================
+# COMMAND
+# =========================
 
 def setup_help(bot):
 
     @bot.command(name="help")
     async def help_cmd(ctx, *, topic: str = None):
+
         if not topic:
-            return await ctx.send(embed=build_overview_embed())
+            return await ctx.send(embed=build_overview())
 
         key = normalize_topic(topic)
 
         if key in HELP_SECTIONS:
-            return await ctx.send(embed=build_section_embed(key))
+            return await ctx.send(embed=build_section(key))
 
         if key in COMMANDS_HELP:
-            return await ctx.send(embed=build_command_embed(key))
-
-        if key == "skill_check":
-            return await ctx.send(embed=build_command_embed("check"))
+            return await ctx.send(embed=build_command(key))
 
         await ctx.send(embed=discord.Embed(
-            title="❌ Help topic not found",
-            description="Use `/help` to see all sections or `/help <command>` for details.",
-            color=discord.Color.red(),
+            title="❌ Not Found",
+            description="Use `/help` to see available sections.",
+            color=discord.Color.red()
         ))

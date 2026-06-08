@@ -9,19 +9,33 @@ from systems.save_system import (
     character_exists,
     get_character_path,
 )
-from systems.formula_engine import get_mod, get_skill_bonus, get_skill_map, normalize_skill_key
+from systems.formula_engine import (
+    get_mod,
+    get_skill_bonus,
+    get_skill_map,
+    normalize_skill_key,
+)
 
+
+# =========================
+# ADMIN CHECK
+# =========================
 
 def is_admin(ctx) -> bool:
     return ctx.author.guild_permissions.administrator
 
 
+# =========================
+# NORMALIZATION
+# =========================
+
 def normalize_name(name: str):
     return " ".join(w.capitalize() for w in name.strip().split())
 
 
-def pretty_key(value: str) -> str:
-    return value.replace("_", " ").title()
+def pretty_name_from_filename(filename: str) -> str:
+    name = filename.replace(".json", "")
+    return " ".join(w.capitalize() for w in name.split())
 
 
 def parse_value(raw: str):
@@ -30,6 +44,10 @@ def parse_value(raw: str):
     except json.JSONDecodeError:
         return raw
 
+
+# =========================
+# DEFAULTS
+# =========================
 
 def ensure_defaults(char: dict):
     char.setdefault("name", "Unknown")
@@ -76,6 +94,10 @@ def recalc_derived_stats(char: dict, refill_hp: bool = False):
     return char
 
 
+# =========================
+# SHEET
+# =========================
+
 def build_sheet(data: dict):
     data = ensure_defaults(data)
 
@@ -85,7 +107,7 @@ def build_sheet(data: dict):
     )
 
     attrs = data.get("attributes", {})
-    skill_entries = data.get("skills", {})
+    skills = data.get("skills", {})
     items = data.get("items", [])
     abilities = data.get("abilities", [])
     weapons = data.get("weapons", [])
@@ -101,24 +123,18 @@ def build_sheet(data: dict):
         inline=False,
     )
 
-    if skill_entries:
-        skill_lines = []
-        for skill_name in sorted(skill_entries.keys()):
+    if skills:
+        lines = []
+        for s in sorted(skills.keys()):
             try:
-                bonus, detail = get_skill_bonus(data, skill_name)
-                level = int(skill_entries.get(skill_name, 0))
-                level_label = {
-                    0: "Untrained",
-                    1: "Proficient",
-                    2: "Expertise",
-                }.get(level, f"Level {level}")
-                skill_lines.append(
-                    f"**{skill_name}**: {level_label} → `{bonus:+d}` "
-                    f"({detail['attribute']} {detail['raw']} → {detail['mod']:+d})"
+                bonus, detail = get_skill_bonus(data, s)
+                lvl = skills[s]
+                lines.append(
+                    f"**{s}** → L{lvl} | `{bonus:+d}`"
                 )
-            except Exception:
-                skill_lines.append(f"**{skill_name}**: invalid skill data")
-        skill_value = "\n".join(skill_lines)
+            except:
+                lines.append(f"**{s}** → invalid")
+        skill_value = "\n".join(lines)
     else:
         skill_value = "None"
 
@@ -128,29 +144,17 @@ def build_sheet(data: dict):
         inline=False,
     )
 
-    embed.add_field(
-        name="📦 Items",
-        value="\n".join(f"• `{item}`" for item in items) or "None",
-        inline=True,
-    )
-    embed.add_field(
-        name="⚔ Weapons",
-        value="\n".join(f"• `{weapon}`" for weapon in weapons) or "None",
-        inline=True,
-    )
-    embed.add_field(
-        name="✨ Abilities",
-        value="\n".join(f"• `{ability}`" for ability in abilities) or "None",
-        inline=True,
-    )
+    embed.add_field(name="📦 Items", value="\n".join(items) or "None", inline=True)
+    embed.add_field(name="⚔ Weapons", value="\n".join(weapons) or "None", inline=True)
+    embed.add_field(name="✨ Abilities", value="\n".join(abilities) or "None", inline=True)
 
     embed.add_field(
         name="📊 Stats",
         value=(
-            f"**Level:** {data.get('level', 1)}\n"
-            f"**HP:** {data.get('hp', 0)} / {data.get('max_hp', 0)}\n"
-            f"**Proficiency:** +{data.get('prof_bonus', 2)}\n"
-            f"**Initiative:** {data.get('initiative', 0):+d}"
+            f"Level: {data.get('level', 1)}\n"
+            f"HP: {data.get('hp', 0)} / {data.get('max_hp', 0)}\n"
+            f"PROF: +{data.get('prof_bonus', 2)}\n"
+            f"INIT: {data.get('initiative', 0):+d}"
         ),
         inline=False,
     )
@@ -158,8 +162,15 @@ def build_sheet(data: dict):
     return embed
 
 
+# =========================
+# COMMANDS
+# =========================
+
 def setup_character_commands(bot):
 
+    # =========================
+    # CREATE
+    # =========================
     @bot.command(name="create")
     async def create(ctx, *, name: str):
         name = normalize_name(name)
@@ -191,12 +202,11 @@ def setup_character_commands(bot):
         data = recalc_derived_stats(data, refill_hp=True)
         save_character(data)
 
-        await ctx.send(embed=discord.Embed(
-            title="✅ Character Created",
-            description=f"**{name}** has entered the world.",
-            color=discord.Color.green()
-        ))
+        await ctx.send(f"✅ Created {name}")
 
+    # =========================
+    # SHEET
+    # =========================
     @bot.command(name="sheet")
     async def sheet(ctx, *, name: str):
         name = normalize_name(name)
@@ -207,172 +217,143 @@ def setup_character_commands(bot):
 
         await ctx.send(embed=build_sheet(data))
 
+    # =========================
+    # LIST CHARS (NEW)
+    # =========================
+    @bot.command(name="listchars")
+    async def listchars(ctx):
+        path = "saves/characters/"
+
+        if not os.path.exists(path):
+            return await ctx.send("No characters found.")
+
+        files = [f for f in os.listdir(path) if f.endswith(".json")]
+
+        if not files:
+            return await ctx.send("No characters found.")
+
+        embed = discord.Embed(
+            title="📜 Character List",
+            color=discord.Color.gold()
+        )
+
+        names = []
+        for f in sorted(files):
+            names.append(f"• {pretty_name_from_filename(f)}")
+
+        embed.description = "\n".join(names)
+
+        await ctx.send(embed=embed)
+
+    # =========================
+    # EDIT
+    # =========================
     @bot.command(name="edit")
     async def edit(ctx, name: str, field: str, *, value: str):
         if not is_admin(ctx):
-            return await ctx.send("⛔ You don't have permission.")
+            return await ctx.send("⛔ No permission.")
 
         name = normalize_name(name)
         data = load_character(name)
 
         if not data:
-            return await ctx.send("❌ Character not found.")
+            return await ctx.send("❌ Not found.")
 
-        field = field.strip()
-        if field.lower() == "name":
-            return await ctx.send("❌ Renaming characters is disabled. Create a new character instead.")
-
-        keys = field.split(".")
         ref = data
+        keys = field.split(".")
 
-        for key in keys[:-1]:
-            if key not in ref or not isinstance(ref[key], dict):
-                ref[key] = {}
-            ref = ref[key]
+        for k in keys[:-1]:
+            ref = ref.setdefault(k, {})
 
-        final_key = keys[-1]
-        parsed_value = parse_value(value)
-
-        ref[final_key] = parsed_value
-
-        if field == "level" or field.startswith("attributes."):
-            data = recalc_derived_stats(data, refill_hp=False)
+        ref[keys[-1]] = parse_value(value)
 
         save_character(data)
+        await ctx.send("✅ Updated.")
 
-        await ctx.send(embed=discord.Embed(
-            title="✏️ Character Updated",
-            description=f"`{field}` updated for **{name}**.",
-            color=discord.Color.orange()
-        ))
-
+    # =========================
+    # RELOAD
+    # =========================
     @bot.command(name="reload")
     async def reload(ctx, *, name: str):
         if not is_admin(ctx):
-            return await ctx.send("⛔ You don't have permission.")
+            return await ctx.send("⛔ No permission.")
 
         name = normalize_name(name)
         data = load_character(name)
 
         if not data:
-            return await ctx.send("❌ Character not found.")
+            return await ctx.send("❌ Not found.")
 
         data = recalc_derived_stats(data, refill_hp=True)
         save_character(data)
 
-        await ctx.send(embed=discord.Embed(
-            title="🔁 Character Reloaded",
-            description=f"Derived stats recalculated for **{name}**.",
-            color=discord.Color.blue()
-        ))
+        await ctx.send("🔁 Reloaded.")
 
+    # =========================
+    # DELETE
+    # =========================
     @bot.command(name="delete")
     async def delete(ctx, *, name: str):
         if not is_admin(ctx):
-            return await ctx.send("⛔ You don't have permission.")
+            return await ctx.send("⛔ No permission.")
 
         name = normalize_name(name)
         path = get_character_path(name)
 
         if not os.path.exists(path):
-            return await ctx.send("❌ Character not found.")
+            return await ctx.send("❌ Not found.")
 
         os.remove(path)
+        await ctx.send("🗑️ Deleted.")
 
-        await ctx.send(embed=discord.Embed(
-            title="🗑️ Character Deleted",
-            description=f"**{name}** has been removed.",
-            color=discord.Color.red()
-        ))
-
-    @bot.command(name="setskill")
-    async def setskill(ctx, name: str, skill: str, level: int):
-        if not is_admin(ctx):
-            return await ctx.send("⛔ You don't have permission.")
-
-        if level not in [0, 1, 2]:
-            return await ctx.send("❌ Skill level must be 0, 1 or 2.")
-
-        name = normalize_name(name)
-        data = load_character(name)
-
-        if not data:
-            return await ctx.send("❌ Character not found.")
-
-        skill_key = normalize_skill_key(skill)
-        skill_map = get_skill_map()
-
-        if skill_key not in skill_map:
-            valid = ", ".join(sorted(skill_map.keys()))
-            return await ctx.send(f"❌ Unknown skill. Valid skills: `{valid}`")
-
-        data.setdefault("skills", {})
-        data["skills"][skill_key] = int(level)
-        save_character(data)
-
-        await ctx.send(embed=discord.Embed(
-            title="🎯 Skill Updated",
-            description=f"**{skill_key}** set to level **{level}** for **{name}**.",
-            color=discord.Color.blurple()
-        ))
-
-    @bot.command(name="removeskill")
-    async def removeskill(ctx, name: str, skill: str):
-        if not is_admin(ctx):
-            return await ctx.send("⛔ You don't have permission.")
-
-        name = normalize_name(name)
-        data = load_character(name)
-
-        if not data:
-            return await ctx.send("❌ Character not found.")
-
-        skill_key = normalize_skill_key(skill)
-        if skill_key not in data.get("skills", {}):
-            return await ctx.send("❌ Skill not found.")
-
-        del data["skills"][skill_key]
-        save_character(data)
-
-        await ctx.send(embed=discord.Embed(
-            title="🗑️ Skill Removed",
-            description=f"**{skill_key}** removed from **{name}**.",
-            color=discord.Color.orange()
-        ))
-
+    # =========================
+    # SKILLS
+    # =========================
     @bot.command(name="skills")
     async def skills(ctx, *, name: str):
         name = normalize_name(name)
         data = load_character(name)
 
         if not data:
-            return await ctx.send("❌ Character not found.")
+            return await ctx.send("❌ Not found.")
 
-        skill_entries = data.get("skills", {})
-        if not skill_entries:
-            return await ctx.send("No skills set.")
+        await ctx.send(embed=build_sheet(data))
 
-        embed = discord.Embed(
-            title=f"🎯 Skills — {name}",
-            color=discord.Color.gold()
-        )
+    # =========================
+    # SET SKILL
+    # =========================
+    @bot.command(name="setskill")
+    async def setskill(ctx, name: str, skill: str, level: int):
+        if not is_admin(ctx):
+            return await ctx.send("⛔ No permission.")
 
-        lines = []
-        for skill_name in sorted(skill_entries.keys()):
-            try:
-                bonus, detail = get_skill_bonus(data, skill_name)
-                level = int(skill_entries.get(skill_name, 0))
-                level_label = {
-                    0: "Untrained",
-                    1: "Proficient",
-                    2: "Expertise",
-                }.get(level, f"Level {level}")
-                lines.append(
-                    f"**{skill_name}** → {level_label} | `{bonus:+d}` "
-                    f"({detail['attribute']} {detail['raw']} → {detail['mod']:+d})"
-                )
-            except Exception:
-                lines.append(f"**{skill_name}** → invalid skill data")
+        name = normalize_name(name)
+        data = load_character(name)
 
-        embed.description = "\n".join(lines)
-        await ctx.send(embed=embed)
+        if not data:
+            return await ctx.send("❌ Not found.")
+
+        data.setdefault("skills", {})
+        data["skills"][skill.upper()] = level
+
+        save_character(data)
+        await ctx.send("🎯 Skill updated.")
+
+    # =========================
+    # REMOVE SKILL
+    # =========================
+    @bot.command(name="removeskill")
+    async def removeskill(ctx, name: str, skill: str):
+        if not is_admin(ctx):
+            return await ctx.send("⛔ No permission.")
+
+        name = normalize_name(name)
+        data = load_character(name)
+
+        if not data:
+            return await ctx.send("❌ Not found.")
+
+        data["skills"].pop(skill.upper(), None)
+
+        save_character(data)
+        await ctx.send("🗑️ Skill removed.")
