@@ -8,6 +8,7 @@ from systems.save_system import (
     load_character,
     character_exists,
     get_character_path,
+    list_characters,
 )
 from systems.formula_engine import (
     get_mod,
@@ -27,11 +28,6 @@ def normalize_name(name: str):
 
 def pretty_id(value: str) -> str:
     return str(value).replace("_", " ").title()
-
-
-def pretty_name_from_filename(filename: str):
-    name = filename.replace(".json", "").replace("_", " ")
-    return " ".join(w.capitalize() for w in name.split())
 
 
 def parse_value(raw: str):
@@ -168,16 +164,28 @@ def build_sheet(data: dict):
     return embed
 
 
+def _guild_id_or_none(ctx):
+    return ctx.guild.id if ctx.guild else None
+
+
 def setup_character_commands(bot):
 
     @bot.command(name="create")
     async def create(ctx, *, name: str):
+        if ctx.guild is None:
+            return await ctx.send(embed=discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            ))
+
+        guild_id = ctx.guild.id
         name = normalize_name(name)
 
-        if character_exists(name):
+        if character_exists(name, guild_id):
             return await ctx.send(embed=discord.Embed(
                 title="❌ Already Exists",
-                description="That character already exists.",
+                description="That character already exists in this server.",
                 color=discord.Color.red(),
             ))
 
@@ -204,23 +212,31 @@ def setup_character_commands(bot):
         }
 
         data = recalc_derived_stats(data, refill_hp=True)
-        save_character(data)
+        save_character(data, guild_id)
 
         await ctx.send(embed=discord.Embed(
             title="✅ Character Created",
-            description=f"**{name}** has entered the world.",
+            description=f"**{name}** has entered the world in this server.",
             color=discord.Color.green()
         ))
 
     @bot.command(name="sheet")
     async def sheet(ctx, *, name: str):
+        if ctx.guild is None:
+            return await ctx.send(embed=discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            ))
+
+        guild_id = ctx.guild.id
         name = normalize_name(name)
-        data = load_character(name)
+        data = load_character(name, guild_id)
 
         if not data:
             return await ctx.send(embed=discord.Embed(
                 title="❌ Not Found",
-                description="That character does not exist.",
+                description="That character does not exist in this server.",
                 color=discord.Color.red(),
             ))
 
@@ -228,36 +244,40 @@ def setup_character_commands(bot):
 
     @bot.command(name="listchars")
     async def listchars(ctx):
-        path = "saves/characters/"
-
-        if not os.path.exists(path):
+        if ctx.guild is None:
             return await ctx.send(embed=discord.Embed(
-                title="📜 Character List",
-                description="No characters found.",
-                color=discord.Color.gold()
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
             ))
 
-        files = [f for f in os.listdir(path) if f.endswith(".json")]
+        guild_id = ctx.guild.id
+        chars = list_characters(guild_id)
 
-        if not files:
+        if not chars:
             return await ctx.send(embed=discord.Embed(
                 title="📜 Character List",
-                description="No characters found.",
-                color=discord.Color.gold()
+                description="No characters found in this server.",
+                color=discord.Color.gold(),
             ))
-
-        names = [f"• `{pretty_name_from_filename(f)}`" for f in sorted(files)]
 
         embed = discord.Embed(
             title="📜 Character List",
-            description="\n".join(names),
+            description="\n".join(f"• `{name}`" for name in chars),
             color=discord.Color.gold()
         )
-        embed.set_footer(text=f"Total characters: {len(files)}")
+        embed.set_footer(text=f"Total characters: {len(chars)}")
         await ctx.send(embed=embed)
 
     @bot.command(name="edit")
     async def edit(ctx, name: str, field: str, *, value: str):
+        if ctx.guild is None:
+            return await ctx.send(embed=discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            ))
+
         if not is_admin(ctx):
             return await ctx.send(embed=discord.Embed(
                 title="⛔ No Permission",
@@ -265,13 +285,14 @@ def setup_character_commands(bot):
                 color=discord.Color.red(),
             ))
 
+        guild_id = ctx.guild.id
         name = normalize_name(name)
-        data = load_character(name)
+        data = load_character(name, guild_id)
 
         if not data:
             return await ctx.send(embed=discord.Embed(
                 title="❌ Not Found",
-                description="That character does not exist.",
+                description="That character does not exist in this server.",
                 color=discord.Color.red(),
             ))
 
@@ -294,7 +315,7 @@ def setup_character_commands(bot):
         if field == "level" or field.startswith("attributes."):
             data = recalc_derived_stats(data, refill_hp=False)
 
-        save_character(data)
+        save_character(data, guild_id)
 
         await ctx.send(embed=discord.Embed(
             title="✏️ Character Updated",
@@ -304,6 +325,13 @@ def setup_character_commands(bot):
 
     @bot.command(name="reload")
     async def reload(ctx, *, name: str):
+        if ctx.guild is None:
+            return await ctx.send(embed=discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            ))
+
         if not is_admin(ctx):
             return await ctx.send(embed=discord.Embed(
                 title="⛔ No Permission",
@@ -311,18 +339,19 @@ def setup_character_commands(bot):
                 color=discord.Color.red(),
             ))
 
+        guild_id = ctx.guild.id
         name = normalize_name(name)
-        data = load_character(name)
+        data = load_character(name, guild_id)
 
         if not data:
             return await ctx.send(embed=discord.Embed(
                 title="❌ Not Found",
-                description="That character does not exist.",
+                description="That character does not exist in this server.",
                 color=discord.Color.red(),
             ))
 
         data = recalc_derived_stats(data, refill_hp=True)
-        save_character(data)
+        save_character(data, guild_id)
 
         await ctx.send(embed=discord.Embed(
             title="🔁 Character Reloaded",
@@ -332,6 +361,13 @@ def setup_character_commands(bot):
 
     @bot.command(name="delete")
     async def delete(ctx, *, name: str):
+        if ctx.guild is None:
+            return await ctx.send(embed=discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            ))
+
         if not is_admin(ctx):
             return await ctx.send(embed=discord.Embed(
                 title="⛔ No Permission",
@@ -339,13 +375,14 @@ def setup_character_commands(bot):
                 color=discord.Color.red(),
             ))
 
+        guild_id = ctx.guild.id
         name = normalize_name(name)
-        path = get_character_path(name)
+        path = get_character_path(name, guild_id)
 
         if not os.path.exists(path):
             return await ctx.send(embed=discord.Embed(
                 title="❌ Not Found",
-                description="That character does not exist.",
+                description="That character does not exist in this server.",
                 color=discord.Color.red(),
             ))
 
@@ -353,12 +390,19 @@ def setup_character_commands(bot):
 
         await ctx.send(embed=discord.Embed(
             title="🗑️ Character Deleted",
-            description=f"**{name}** has been removed.",
+            description=f"**{name}** has been removed from this server.",
             color=discord.Color.red()
         ))
 
     @bot.command(name="setskill")
     async def setskill(ctx, name: str, skill: str, level: int):
+        if ctx.guild is None:
+            return await ctx.send(embed=discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            ))
+
         if not is_admin(ctx):
             return await ctx.send(embed=discord.Embed(
                 title="⛔ No Permission",
@@ -373,13 +417,14 @@ def setup_character_commands(bot):
                 color=discord.Color.red(),
             ))
 
+        guild_id = ctx.guild.id
         name = normalize_name(name)
-        data = load_character(name)
+        data = load_character(name, guild_id)
 
         if not data:
             return await ctx.send(embed=discord.Embed(
                 title="❌ Not Found",
-                description="That character does not exist.",
+                description="That character does not exist in this server.",
                 color=discord.Color.red(),
             ))
 
@@ -396,7 +441,7 @@ def setup_character_commands(bot):
 
         data.setdefault("skills", {})
         data["skills"][skill_key] = int(level)
-        save_character(data)
+        save_character(data, guild_id)
 
         await ctx.send(embed=discord.Embed(
             title="🎯 Skill Updated",
@@ -406,6 +451,13 @@ def setup_character_commands(bot):
 
     @bot.command(name="removeskill")
     async def removeskill(ctx, name: str, skill: str):
+        if ctx.guild is None:
+            return await ctx.send(embed=discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            ))
+
         if not is_admin(ctx):
             return await ctx.send(embed=discord.Embed(
                 title="⛔ No Permission",
@@ -413,13 +465,14 @@ def setup_character_commands(bot):
                 color=discord.Color.red(),
             ))
 
+        guild_id = ctx.guild.id
         name = normalize_name(name)
-        data = load_character(name)
+        data = load_character(name, guild_id)
 
         if not data:
             return await ctx.send(embed=discord.Embed(
                 title="❌ Not Found",
-                description="That character does not exist.",
+                description="That character does not exist in this server.",
                 color=discord.Color.red(),
             ))
 
@@ -432,7 +485,7 @@ def setup_character_commands(bot):
             ))
 
         data["skills"].pop(skill_key, None)
-        save_character(data)
+        save_character(data, guild_id)
 
         await ctx.send(embed=discord.Embed(
             title="🗑️ Skill Removed",
@@ -442,13 +495,21 @@ def setup_character_commands(bot):
 
     @bot.command(name="skills")
     async def skills(ctx, *, name: str):
+        if ctx.guild is None:
+            return await ctx.send(embed=discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            ))
+
+        guild_id = ctx.guild.id
         name = normalize_name(name)
-        data = load_character(name)
+        data = load_character(name, guild_id)
 
         if not data:
             return await ctx.send(embed=discord.Embed(
                 title="❌ Not Found",
-                description="That character does not exist.",
+                description="That character does not exist in this server.",
                 color=discord.Color.red(),
             ))
 

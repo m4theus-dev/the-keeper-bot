@@ -14,17 +14,15 @@ COMMANDS_HELP = {
         "usage": "/create <name>",
         "args": "name → character name (use quotes if needed)",
         "example": '/create "Ed Baiano"',
-        "notes": "Starts with base attributes and default HP."
+        "notes": "Creates the character inside the current server."
     },
-
     "sheet": {
         "desc": "Displays the full character sheet.",
         "usage": "/sheet <name>",
         "args": "name → character name",
         "example": '/sheet "Ed Baiano"',
-        "notes": "Shows attributes, skills, items, weapons, abilities, and equipped weapon."
+        "notes": "Shows server-specific saved data."
     },
-
     "edit": {
         "desc": "Edits character fields (admin only).",
         "usage": "/edit <name> <field> <value>",
@@ -32,7 +30,6 @@ COMMANDS_HELP = {
         "example": '/edit "Ed Baiano" attributes.STR 15',
         "notes": "Admin only. Direct data mutation."
     },
-
     "reload": {
         "desc": "Recalculates derived stats.",
         "usage": "/reload <name>",
@@ -40,23 +37,20 @@ COMMANDS_HELP = {
         "example": '/reload "Ed Baiano"',
         "notes": "Recomputes HP, initiative, and proficiency."
     },
-
     "delete": {
         "desc": "Deletes a character (admin only).",
         "usage": "/delete <name>",
         "args": "name → character name",
         "example": '/delete "Ed Baiano"',
-        "notes": "Permanent deletion."
+        "notes": "Permanent deletion in the current server."
     },
-
     "listchars": {
-        "desc": "Lists all saved characters.",
+        "desc": "Lists all saved characters in this server.",
         "usage": "/listchars",
         "args": "none",
         "example": "/listchars",
-        "notes": "Reads from saves/characters/"
+        "notes": "Reads from saves/guilds/<guild_id>/characters/"
     },
-
     "setskill": {
         "desc": "Sets skill proficiency level.",
         "usage": "/setskill <name> <skill> <level>",
@@ -64,7 +58,6 @@ COMMANDS_HELP = {
         "example": '/setskill "Ed Baiano" athletics 2',
         "notes": "Admin only."
     },
-
     "removeskill": {
         "desc": "Removes a skill.",
         "usage": "/removeskill <name> <skill>",
@@ -72,7 +65,6 @@ COMMANDS_HELP = {
         "example": '/removeskill "Ed Baiano" stealth',
         "notes": "Admin only."
     },
-
     "skills": {
         "desc": "Shows character skills.",
         "usage": "/skills <name>",
@@ -80,7 +72,6 @@ COMMANDS_HELP = {
         "example": '/skills "Ed Baiano"',
         "notes": "Uses the 0/1/2 proficiency system."
     },
-
     "check": {
         "desc": "Skill check (d20 + attribute + proficiency).",
         "usage": "/check <name> <skill> [DC]",
@@ -88,7 +79,6 @@ COMMANDS_HELP = {
         "example": '/check "Ed Baiano" acrobatics 15',
         "notes": "Uses the full skill mapping from data/skills.json."
     },
-
     "roll": {
         "desc": "Rolls a custom formula.",
         "usage": "/roll <name> <formula>",
@@ -96,7 +86,6 @@ COMMANDS_HELP = {
         "example": '/roll "Ed Baiano" 1d20+DEX+PROF',
         "notes": "Supports dice, variables, and skill injection."
     },
-
     "use": {
         "desc": "Uses an item from inventory.",
         "usage": "/use <name> <item> [DC]",
@@ -104,7 +93,6 @@ COMMANDS_HELP = {
         "example": '/use "Ed Baiano" health_potion 12',
         "notes": "Reads attempt/value from items.json."
     },
-
     "cast": {
         "desc": "Casts an ability/spell.",
         "usage": "/cast <name> <ability> [DC]",
@@ -112,7 +100,6 @@ COMMANDS_HELP = {
         "example": '/cast "Ed Baiano" fireball 15',
         "notes": "Uses ability steps and weapon requirements when needed."
     },
-
     "attack": {
         "desc": "Attacks using a weapon.",
         "usage": "/attack <name> <weapon> [AC]",
@@ -120,15 +107,13 @@ COMMANDS_HELP = {
         "example": '/attack "Ed Baiano" longsword 15',
         "notes": "AC = Armor Class."
     },
-
     "equip": {
         "desc": "Equips a weapon.",
         "usage": "/equip <name> <weapon>",
         "args": "weapon → owned weapon",
         "example": '/equip "Ed Baiano" dagger',
-        "notes": "Sets the active weapon used as priority for skills and attacks."
+        "notes": "Sets the active weapon used as priority."
     },
-
     "unequip": {
         "desc": "Removes the equipped weapon.",
         "usage": "/unequip <name>",
@@ -136,7 +121,6 @@ COMMANDS_HELP = {
         "example": '/unequip "Ed Baiano"',
         "notes": "Does not remove the weapon from inventory."
     },
-
     "equipment": {
         "desc": "Shows current equipment.",
         "usage": "/equipment <name>",
@@ -144,7 +128,6 @@ COMMANDS_HELP = {
         "example": '/equipment "Ed Baiano"',
         "notes": "Shows equipped weapon and inventory weapons."
     },
-
     "additem": {
         "desc": "Adds item to character.",
         "usage": "/additem <name> <item>",
@@ -152,7 +135,6 @@ COMMANDS_HELP = {
         "example": '/additem "Ed Baiano" health_potion',
         "notes": "Admin only."
     },
-
     "removeitem": {
         "desc": "Removes item from character.",
         "usage": "/removeitem <name> <item>",
@@ -160,7 +142,6 @@ COMMANDS_HELP = {
         "example": '/removeitem "Ed Baiano" health_potion',
         "notes": "Admin only."
     },
-
     "addability": {
         "desc": "Adds ability to character.",
         "usage": "/addability <name> <ability>",
@@ -168,7 +149,6 @@ COMMANDS_HELP = {
         "example": '/addability "Ed Baiano" fireball',
         "notes": "Admin only."
     },
-
     "removeability": {
         "desc": "Removes ability from character.",
         "usage": "/removeability <name> <ability>",
@@ -176,7 +156,6 @@ COMMANDS_HELP = {
         "example": '/removeability "Ed Baiano" fireball',
         "notes": "Admin only."
     },
-
     "addweapon": {
         "desc": "Adds weapon to character.",
         "usage": "/addweapon <name> <weapon>",
@@ -184,7 +163,6 @@ COMMANDS_HELP = {
         "example": '/addweapon "Ed Baiano" longsword',
         "notes": "Admin only."
     },
-
     "removeweapon": {
         "desc": "Removes weapon from character.",
         "usage": "/removeweapon <name> <weapon>",
@@ -192,7 +170,6 @@ COMMANDS_HELP = {
         "example": '/removeweapon "Ed Baiano" longsword',
         "notes": "Admin only."
     },
-
     "iteminfo": {
         "desc": "Shows item data from database.",
         "usage": "/iteminfo <item>",
@@ -200,7 +177,6 @@ COMMANDS_HELP = {
         "example": "/iteminfo health_potion",
         "notes": "Displays attempt/value when available."
     },
-
     "abilityinfo": {
         "desc": "Shows ability data from database.",
         "usage": "/abilityinfo <ability>",
@@ -208,7 +184,6 @@ COMMANDS_HELP = {
         "example": "/abilityinfo fireball",
         "notes": "Shows attempt, value, and requirements."
     },
-
     "weaponinfo": {
         "desc": "Shows weapon data from database.",
         "usage": "/weaponinfo <weapon>",
