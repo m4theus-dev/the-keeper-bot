@@ -2,23 +2,25 @@
   "fists": {
     "type": "fists",
     "damage": "1d4+STR",
-    "attempt": "1d20+STR"
+    "attempt": "1d20+STR",
+    "weapon_tags": ["natural"]
   },
   "longsword": {
     "type": "longsword",
     "damage": "1d8+STR",
-    "attempt": "1d20+STR+PROF"
+    "attempt": "1d20+STR+PROF",
+    "weapon_tags": ["heavy", "martial"]
   },
-
   "shortbow": {
     "type": "shortbow",
     "damage": "1d6+DEX",
-    "attempt": "1d20+DEX+PROF"
+    "attempt": "1d20+DEX+PROF",
+    "weapon_tags": ["ranged"]
   },
-  
   "dagger": {
     "type": "dagger",
     "damage": "1d4+DEX",
-    "attempt": "1d20+DEX+PROF"
+    "attempt": "1d20+DEX+PROF",
+    "weapon_tags": ["finesse", "light", "dagger"]
   }
 }

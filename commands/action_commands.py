@@ -276,7 +276,7 @@ def setup_action_commands(bot):
             return await ctx.send("❌ This ability requires a weapon, but none could be selected from the character inventory.")
 
         try:
-            result = execute_action(char, data, weapon_data=weapon_data)
+            result = execute_action(char, data, weapons_db=weapon_data)
         except (ValueError, KeyError) as e:
             return await ctx.send(f"❌ {e}")
 
@@ -340,7 +340,7 @@ def setup_action_commands(bot):
             return await ctx.send("❌ Weapon not found in database.")
 
         try:
-            result = execute_action(char, data, weapon_data=data)
+            result = execute_action(char, data, weapons_db=data)
         except (ValueError, KeyError) as e:
             return await ctx.send(f"❌ {e}")
 

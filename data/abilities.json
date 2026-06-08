@@ -1,13 +1,15 @@
 {
-  "double_strike": {
-    "type": "weapon_skill",
-    "description": "Attack twice with weapon",
-    "requires_weapon": true,
-    "weapon_tags": ["dagger"],
-    "steps": [
-      { "attempt": "1d20+DEX+PROF", "value": "weapon" },
-      { "attempt": "1d20+DEX+PROF", "value": "weapon" }
-    ]
+  {
+    "double_strike": {
+      "type": "weapon_skill",
+      "description": "Attack twice with a finesse weapon",
+      "requires_weapon": true,
+      "weapon_tags": ["finesse"],
+      "steps": [
+        { "attempt": "1d20+DEX+PROF", "value": "weapon" },
+        { "attempt": "1d20+DEX+PROF", "value": "weapon" }
+      ]
+    }
   },
 
   "fireball": {
