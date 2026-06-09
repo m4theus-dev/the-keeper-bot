@@ -13,7 +13,8 @@
         "health_potion"
     ],
     "abilities": [
-        "double_strike"
+        "double_strike",
+        "fireball"
     ],
     "weapons": [
         "dagger",
